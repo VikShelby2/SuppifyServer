@@ -1,0 +1,18 @@
+[
+    {
+
+      "name": "Summer Collection",
+      "description": "A vibrant summer collection with bright colors and modern designs.",
+      "version": "1.0.0",
+      "status": "active",
+      "metadata": {
+        "seoTitle": "Summer Collection",
+        "seoDescription": "Browse our exclusive summer collection with vibrant colors and amazing designs.",
+        "keywords": ["summer", "collection", "clothing", "fashion"]
+      },
+      "isPublished": true,
+      "createdAt": "2025-03-01T00:00:00Z",
+      "updatedAt": "2025-03-01T00:00:00Z"
+    }
+  ]
+  

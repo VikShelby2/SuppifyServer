@@ -1,10 +1,12 @@
 // server.js
 const path = require("path")
 const express = require('express');
+const session = require("express-session");
 const connectDB = require('./db/mongodb');
 const  dotenv  = require("dotenv")
 const cookieParser  = require("cookie-parser")
 const userRoutes = require('./routes/userRoutes')
+const passport = require("passport");
 const cors = require('cors');
 const { protectRoute } = require('./middlewares/protectRoute');
 const storeRoute = require('./routes/storeRoutes')
@@ -28,32 +30,40 @@ const app = express();
     origin: 'http://localhost:3000',
     credentials: true, // Enable credentials (cookies) to be sent and received
 };
+// Passport middleware initialization
+app.use(
+  session({
+    secret: "your_secret_key", // Replace with a more secure key in production
+    resave: false,
+    saveUninitialized: false,
+    cookie: { httpOnly: true, secure: false }, // Set `secure: true` in production if using HTTPS
+  })
+);
+app.use(passport.initialize());
+app.use(passport.session());
 
-
-
-
-
-app.use((req, res, next) => {
-  console.log(`Proxy received: 
-     ${req.method} 
-     ${req.url} 
-     ${req.body}`);
-  next();
-});
+// Import and configure Passport strategies
+require("./config/passaport")(passport); // Load passport strategies (e.g., local and google)
 
  app.use(express.json({ limit: "50mb" })); // To parse JSON data in the req.body
  app.use(express.urlencoded({ extended: true })); // To parse form data in the req.body
  app.use(cookieParser());
  app.use("/api/builder", createProxyMiddleware({ target: "http://localhost:5002", changeOrigin: true }));
  app.use(cors(corsOptions))
- // Routes 
+ app.use((req, res, next) => {
+  console.log(`Proxy received request:
+  - Method: ${req.method} 
+  - URL: ${req.originalUrl} 
+  - Body: ${JSON.stringify(req.body, null, 2) || 'No body'}`);
+  next();
+});
  app.use("/api/product", productRoute);
  app.use("/api/users", userRoutes);
  app.use('/api/stripe' , stripeRoutes)
 
  app.use("/api/" , storeRoute);
  app.get('/api/protected', protectRoute, (req, res) => {
-    res.send('This is a protected route');
+  res.json({ message: 'This is a protected route', user: req.user });
 });
 
 

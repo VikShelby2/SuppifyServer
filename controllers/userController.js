@@ -1,62 +1,79 @@
 const User = require("../models/userModel.js");
+const { OAuth2Client } = require("google-auth-library");
 const bcrypt = require("bcryptjs");
 const Store = require('../models/storeModel');
 const generateTokenAndSetCookie = require("../utils/helper/generateTokenAndSetCookie.js");
 const generateSVG = require("../utils/generateSvg.js");
 const Collection = require('../models/collectionModel')
 const mongoose = require('mongoose');
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
   
-
 
 const signupUser = async (req, res) => {
     const session = await mongoose.startSession();
     session.startTransaction();
 
     try {
-        const { name, email, username, password, storeName, storeLocation } = req.body;
+        const { name, email, username, password, storeName, storeLocation, googleToken } = req.body;
 
-        if (!name || !email || !username || !password || !storeName || !storeLocation) {
-            return res.status(400).json({ error: "All fields are required" });
+        let newUser;
+
+        if (googleToken) {
+            // Handle Google OAuth signup
+            const ticket = await client.verifyIdToken({
+                idToken: googleToken,
+                audience: process.env.GOOGLE_CLIENT_ID,
+            });
+            const { name, email, picture, sub } = ticket.getPayload(); // Extract user data
+
+            const existingUser = await User.findOne({ email });
+            if (existingUser) {
+                return res.status(200).json({ message: "User already exists, logging in", user: existingUser });
+            }
+
+            newUser = new User({
+                name,
+                email,
+                username: email.split("@")[0], // Generate username from email
+                googleId: sub,
+                profilePic: picture,
+                svg: generateSVG(name),
+            });
+        } 
+        else {
+            // Handle Email/Password signup
+            if (!name || !email || !username || !password || !storeName || !storeLocation) {
+                return res.status(400).json({ error: "All fields are required" });
+            }
+
+            const existingUser = await User.findOne({ $or: [{ email }, { username }] });
+            if (existingUser) {
+                return res.status(400).json({ error: "User already exists" });
+            }
+
+            const hashedPassword = await bcrypt.hash(password, 10);
+            newUser = new User({
+                name,
+                email,
+                username,
+                password: hashedPassword,
+                svg: generateSVG(name),
+            });
         }
 
-        const existingUser = await User.findOne({ $or: [{ email }, { username }] });
-        if (existingUser) {
-            return res.status(400).json({ error: "User already exists" });
-        }
-
-        const hashedPassword = await bcrypt.hash(password, 10);
-        const svgProfile = generateSVG(name);
-        const svgData = generateSVG(storeName);
-
-        if (!svgData || !svgProfile) {
-            throw new Error("Failed to generate SVGs");
-        }
-
-        const newUser = new User({
-            name,
-            email,
-            username,
-            password: hashedPassword,
-            svg: svgProfile
-        });
         await newUser.save({ session });
 
         const store = new Store({
             storeName,
             userId: newUser._id,
             storeLocation,
-            svgData
+            svgData: generateSVG(storeName),
         });
         await store.save({ session });
 
         const defaultCollection = new Collection({
             storeId: store._id,
-            collections: [
-                {
-                    name: 'MyHome',
-                    description: 'Default collection'
-                }
-            ]
+            collections: [{ name: "MyHome", description: "Default collection" }],
         });
         await defaultCollection.save({ session });
 
@@ -70,13 +87,14 @@ const signupUser = async (req, res) => {
                 _id: newUser._id,
                 name: newUser.name,
                 email: newUser.email,
-                username: newUser.username
+                username: newUser.username,
+                profilePic: newUser.profilePic,
             },
             store: {
                 _id: store._id,
                 storeName: store.storeName,
-                storeLocation: store.storeLocation
-            }
+                storeLocation: store.storeLocation,
+            },
         });
     } catch (err) {
         await session.abortTransaction();

@@ -2,32 +2,36 @@ const express = require('express');
 const dotenv = require("dotenv");
 const cors = require('cors');
 const connectDB = require('./config/db');
-const cookieParser  = require("cookie-parser")
+const cookieParser = require("cookie-parser");
 const productRoute = require("./routes/productRoute");
+
 dotenv.config();
 const app = express();
 
+// Connect MongoDB
 connectDB();
-app.use(express.json({ limit: '10mb' })); // Example: limit request body to 10MB
+
+// Middleware
 const corsOptions = {
-    origin: ["http://localhost:3000", "http://localhost:8080"], // Allow frontend and main server
-    credentials: true, // Allow cookies
+    origin: ["http://localhost:3000", "http://localhost:8080"],
+    credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE"],
     allowedHeaders: ["Content-Type", "Authorization"],
 };
 
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 app.use(cors(corsOptions));
- app.use(express.urlencoded({ extended: true })); 
-  app.use(cookieParser());
-app.use(express.json());
+
+// Logging Middleware
 app.use((req, res, next) => {
-    console.log(`Proxy received: ${req.method} ${req.url}`);
+    console.log(`Product Service received: ${req.method} ${req.originalUrl}`);
     next();
-  });
-  
-app.use("/api/product" , productRoute)
+});
+
+// Product Routes
+app.use("/api/product", productRoute);
+
 const PORT = 5003;
-app.listen(PORT, () => console.log(`Products Service running on port ${PORT}`));
-
-
-
+app.listen(PORT, () => console.log(`Product Service running on port ${PORT}`));
