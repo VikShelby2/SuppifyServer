@@ -1,4 +1,4 @@
-const { v4: uuidv4 } = require('uuid');
+const { v4: uuidv4 } = require("uuid");
 const ColorHash = require("color-hash").default;
 
 const colorHash = new ColorHash({ saturation: 1.0 });
@@ -20,7 +20,7 @@ const generateSVG = (s, size = 40) => {
 
   const svg = `
     <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="${size / 2}" cy="${size / 2}" r="${size / 2}" fill="url(#${gradientId})" />
+      <rect width="${size}" height="${size}" fill="url(#${gradientId})" />
       <defs>
         <linearGradient id="${gradientId}" x1="0" y1="0" x2="${size}" y2="${size}" gradientUnits="userSpaceOnUse">
           <stop stop-color="${c1}" />
