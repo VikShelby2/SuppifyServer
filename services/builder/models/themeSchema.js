@@ -9,7 +9,7 @@ const themeSchema = new mongoose.Schema({
     metadata: { type: Object }, // SEO metadata
     isPublished: { type: Boolean, default: false },
     createdAt: { type: Date, default: Date.now },
-    pageIds: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Page'  , required:false  }] ,
+    pages: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Page'  , required:false  }] ,
     updatedAt: { type: Date, default: Date.now },
 })
 

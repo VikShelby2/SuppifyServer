@@ -5,5 +5,5 @@ const { createNewTheme } = require("../controllers/builder");
 
 // Route to create a new page
 router.post("/createPage", createNewPage);
-router.post('createTheme' , createNewTheme )
+router.post('/createTheme' , createNewTheme )
 module.exports = router;

@@ -1,6 +1,8 @@
 const Page = require("../models/pageSchema");  
-const { validatePageData } = require('../utils/pageValdation')  
-const Theme  = require('../models/themeSchema')
+const { validatePageData } = require('../utils/helper/pageValdation');  
+const Theme  = require('../models/themeSchema');
+const readJsonFile = require("../utils/helper/getJsonData");
+
 // Function to create a new page
 const createNewPage = async (req, res) => {
     try {
@@ -39,17 +41,18 @@ const createNewPage = async (req, res) => {
     }
 };
 const createNewTheme = async (req, res) => {
-    try {
-      const { storeId, status, themeId } = req.body;
-  
-      // Find the theme by themeId
+  try {
+    const { storeId, status, themeId, isDublicated, name, description, pages } = req.body;
+    
+    let newTheme;
+
+    // If duplicating an existing theme
+    if (isDublicated) {
       const theme = await Theme.findById(themeId);
       if (!theme) {
         return res.status(404).json({ message: 'Theme not found' });
       }
-  
-      // Create a new theme based on the old one with the provided storeId and status
-      const newTheme = new Theme({
+      newTheme = new Theme({
         name: theme.name,
         description: theme.description,
         storeId,
@@ -57,17 +60,57 @@ const createNewTheme = async (req, res) => {
         version: theme.version,
         pages: theme.pages,
       });
-  
-      // Save the new theme to the database
-      await newTheme.save();
-  
-      // Send a response indicating the new theme was created
-      res.status(201).json({ message: 'New theme created successfully', newTheme });
-  
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ message: 'Server error' });
+    } else {
+      // If not duplicating, create a new theme with the provided details
+      newTheme = new Theme({
+        name,
+        description,
+        storeId,
+        status,
+        pages,
+      });
     }
-  };
+
+    // Save the new theme to the database
+    await newTheme.save();
+
+    // Send a response indicating the new theme was created
+    res.status(201).json({ message: 'New theme created successfully', newTheme });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
   
-module.exports = { createNewPage  , createNewTheme};
+const createDefaultTheme = async (req, res) => {
+    try {
+        const { storeId } = req.body;
+        const themeId = process.env.THEME_DEF_ID;
+        const theme = await Theme.findById(themeId); 
+        if (!theme) {
+            return res.status(404).json({ message: 'Theme not found' });
+        }
+              const defaultTheme = new Theme({
+            name: theme.name,
+            description: theme.description,
+            storeId,
+            status: "active",
+            version: theme.version,
+            pages: theme.pages,
+            metadata: theme.metadata,
+            isPublished: theme.isPublished,
+        });
+      
+        await defaultTheme.save();
+
+        res.status(201).json({ message: "Default theme created successfully", theme: defaultTheme });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Server error" });
+    }
+};
+
+
+module.exports = { createNewPage  , createNewTheme , createDefaultTheme};
