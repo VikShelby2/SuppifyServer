@@ -41,6 +41,8 @@ passport.use(
         const { name, email, picture } = profile._json;
          console.log(name)
         let user = await User.findOne({ email });
+        let isNewUser = false;
+
         if (!user) {
           // If the user doesn't exist, create a new user
           user = new User({
@@ -51,9 +53,10 @@ passport.use(
             svg: "", // You can generate a SVG if needed
           });
           await user.save();
+          isNewUser = true;
         }
        
-       
+        user.isNewUser = isNewUser;
         return done(null, user);
       } catch (error) {
         return done(error);

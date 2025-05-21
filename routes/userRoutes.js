@@ -29,7 +29,14 @@ router.get("/google/callback",
     const user = req.user
     console.log('hey' , user)
     generateTokenAndSetCookie(user._id, res);
-    res.redirect(`http://localhost:3000/create-store`);
+    console.log(user.isNewUser)
+    if (user.isNewUser) {
+      // Redirect new users to create store
+      res.redirect(`http://localhost:3000/create-store`);
+    } else {
+      // Redirect existing users to dashboard or home
+      res.redirect(`http://localhost:3000/store-list`);
+    }
   }
 );  
 router.post("/logout", logoutUser);
